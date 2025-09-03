@@ -7,28 +7,31 @@ import {CommentService} from "../../services/api/comment/comment.service";
 import {PagedResult} from "../../shared/utility/dtos/PagedResult";
 import {PictureDto} from "../../shared/utility/dtos/PictureDto";
 import { NavigationEnd, NavigationStart, Router } from '@angular/router';
+import { AccountService } from 'src/app/services/api/account/account.service';
 
 @Injectable({
   providedIn: 'root'
 })
-export class PictureTrackingService {
+export class AccountPictureTrackingService {
   public triggerCall = new BehaviorSubject<null>(null);
   public canFetchPictures = true;
+  public accountPageId;
 
   private pageSize = 4;
   private pageNumber = 1;
 
   private pictureService = inject(PictureService);
+  private accountService = inject(AccountService);
   private pictureLikesService = inject(PictureLikesService);
   private commentService = inject(CommentService)
+
   private picturesAggregated: PictureDto[] = [];
   private pictureUpdate$ = new Subject<PictureDto>();
 
-  // todo: introduce accountPageScroll
 
-  homepageScroll$ = this.triggerCall
+  accountPageScroll$ = this.triggerCall
     .pipe(
-      switchMap(() => this.getPictures(this.pageSize, this.pageNumber))
+      switchMap(() => this.getPictures(this.pageSize, this.pageNumber, this.accountPageId))
     );
   likedPicture$ = this.pictureLikesService.likedPicture$
     .pipe(
@@ -43,9 +46,8 @@ export class PictureTrackingService {
       startWith(null)
     );
 
-  // todo: either handle newly introduced accountPage scroll or do it in a separate rxjs stream
   pictures$ = combineLatest([
-    this.homepageScroll$,
+    this.accountPageScroll$,
     this.likedPicture$,
     this.updatedPicture$,
     this.commentAdded$,
@@ -81,7 +83,21 @@ export class PictureTrackingService {
     })
   );
 
-  // activates after user closes picture modal and gets id from url
+  private getPictures = (pageSize: number, pageNumber: number, accountId: string) => {
+    return this.accountService.getPicturesById(accountId, pageSize, pageNumber).pipe(
+      map((res: PagedResult<PictureDto>) => {
+        this.pageNumber = res.page === res.totalPages ? 1 : res.page + 1;
+        this.picturesAggregated = [...this.picturesAggregated, ...res.items];
+        this.canFetchPictures = true;
+        if(res.page == res.totalPages){
+          this.canFetchPictures = false
+        }
+        return this.picturesAggregated;
+      }),
+    );
+  };
+
+  // activates after user closes picture modal and gets pic id from url
   constructor(private router: Router) {
     this.router.events
       .pipe(
@@ -95,18 +111,7 @@ export class PictureTrackingService {
       });
   }
 
-  // todo: consider using separate method for account pictures, non obligatory
-  private getPictures = (pageSize: number, pageNumber: number) => {
-    return this.pictureService.get(pageSize, pageNumber).pipe(
-      map((res: PagedResult<PictureDto>) => {
-        this.pageNumber = res.page === res.totalPages ? 1 : res.page + 1;
-        this.picturesAggregated = [...this.picturesAggregated, ...res.items];
-        this.canFetchPictures = true;
-        return this.picturesAggregated;
-      }),
-    );
-  };
-
+  // updates picture
   private updatePicture = (id: string) => {
     this.pictureService.getById(id)
       .pipe(

@@ -1,54 +1,35 @@
-import {ChangeDetectorRef, Component, HostListener, inject, OnDestroy, OnInit} from '@angular/core';
-import { CommonModule } from '@angular/common';
-import {ActivatedRoute, NavigationStart, Router, RouterLink, RoutesRecognized} from "@angular/router";
-import {
-  BehaviorSubject,
-  catchError,
-  EMPTY,
-  filter,
-  Observable,
-  of,
-  startWith,
-  Subscription,
-  switchMap,
-} from "rxjs";
+import {Component, HostListener, inject, OnInit} from '@angular/core';
+import {CommonModule } from '@angular/common';
+import {catchError, combineLatest, EMPTY, filter, map, Observable, of, Subscription, switchMap, tap} from "rxjs";
 import {AccountDto} from "../../shared/utility/dtos/AccountDto";
-import {ToastrService} from "ngx-toastr";
-import {defaultErrorHeading} from "../../shared/utility/constants";
 import {UrlTransformModule} from "../../shared/utility/pipes/url-transform/url-transform.module";
-import {combineLatest} from "rxjs";
-import {map, tap} from "rxjs/operators";
-import {PostPreviewComponent} from "./post-preview/post-preview.component";
 import {fadeInAnimation} from "../../shared/utility/animations/fadeInAnimation";
-import {AccountService} from "../../services/api/account/account.service";
 import {AuthService} from "../../services/api/account/auth.service";
 import * as _ from "lodash";
 import { PictureDto } from 'src/app/shared/utility/dtos/PictureDto';
-import { PictureService } from 'src/app/services/api/picture/picture.service';
+import { AccountPictureTrackingService } from '../home/account-picture-tracking.service';
+import { ActivatedRoute, Router } from '@angular/router';
+import { AccountService } from 'src/app/services/api/account/account.service';
+import { ToastrService } from 'ngx-toastr';
+import { defaultErrorHeading } from 'src/app/shared/utility/constants';
+import { PostPreviewComponent } from "./post-preview/post-preview.component";
 
 @Component({
   selector: 'pp-account',
   standalone: true,
-  imports: [CommonModule, UrlTransformModule, RouterLink, PostPreviewComponent],
+  imports: [CommonModule, UrlTransformModule, PostPreviewComponent],
   templateUrl: './account.component.html',
   styleUrls: ['./account.component.scss'],
   animations: [fadeInAnimation]
 })
-export class AccountComponent implements OnInit, OnDestroy {
+export class AccountComponent implements OnInit{
 
   private route = inject(ActivatedRoute);
-  private router = inject(Router);
   private toastrService = inject(ToastrService);
+  private router = inject(Router);
   private accountService = inject(AccountService);
+  private pictureTrackService = inject(AccountPictureTrackingService)
   private authService = inject(AuthService);
-  private pictureService = inject(PictureService);
-
-  private pageSize = 4;
-  private pageNumber = 1;
-  private totalPages = 2;
-
-  private enableScrollListener = true;
-  private scrollSubject: BehaviorSubject<null> = new BehaviorSubject<null>(null);
   private masterSub: Subscription = new Subscription();
 
   account$: Observable<AccountDto> = new Observable<AccountDto>();
@@ -59,33 +40,7 @@ export class AccountComponent implements OnInit, OnDestroy {
   commentsCount = 0
   currentId: string = ""
 
-  constructor(private cdr: ChangeDetectorRef, router: Router) {
-    router.events.subscribe((event) => {
-      if (event instanceof NavigationStart) {
-        if(this.isPictueModalOpen && router.url.split("=")[1] != undefined){
-          let lastOpenedPictureId = router.url.split("=")[1]
-          this.accountService.getById(router.url
-            .split('/')[2].split("?")[0])
-            .pipe(
-              tap((acc: AccountDto) => {this.likesCount = acc.likeCount; this.commentsCount = acc.commentCount; this.cdr.detectChanges();})
-            ).subscribe()
-          
-          this.pictureService.getById(lastOpenedPictureId)
-            .pipe(
-              tap((pic : PictureDto) => {
-                let list : string[] = []
-                this.pictures.forEach(x => {list.push(x.id)})
-                this.pictures[list.indexOf(pic.id)].likeCount = pic.likeCount
-                this.pictures[list.indexOf(pic.id)].commentCount = pic.commentCount
-                this.pictures[list.indexOf(pic.id)].isLiked = pic.isLiked
-                this.cdr.detectChanges();
-              })
-            ).subscribe()
-        }
-        this.isPictueModalOpen = !this.isPictueModalOpen
-      }
-    });
-  }
+  pictures$ = this.pictureTrackService.pictures$;
 
   @HostListener('window:scroll', [])
   onWindowScroll() {
@@ -94,21 +49,28 @@ export class AccountComponent implements OnInit, OnDestroy {
     const scrollPosition = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
     const threshold = windowHeight * 0.75;
 
-    if (
-      documentHeight - scrollPosition - windowHeight < threshold && this.enableScrollListener
-    ) {
-      this.enableScrollListener = false;
-      this.pageNumber += 1;
-      if (this.pageNumber <= this.totalPages) {
-        this.scrollSubject.next(null);
-      }
+    const isAtBottomOfTheScreen = documentHeight - scrollPosition - windowHeight < threshold;
+    if (isAtBottomOfTheScreen && this.pictureTrackService.canFetchPictures) {
+      
+      this.pictureTrackService.canFetchPictures = false;
+      this.pictureTrackService.triggerCall.next(null);
     }
   }
 
+  trackByPictureId(index: number, picture: PictureDto): string {
+    return picture.id;
+  }
+
+  logout() {
+    this.authService.forgetTokens().subscribe();
+  }
+
+  ngOnDestroy() {
+    this.masterSub.unsubscribe();
+  }
+
   async ngOnInit() {
-    if (this.router.url.split("=")[1] != undefined) {
-      this.isPictueModalOpen = true
-    }
+    
     const id$: Observable<string> = this.route.paramMap.pipe(
       switchMap(params => {
         const id = params.get('id');
@@ -124,15 +86,13 @@ export class AccountComponent implements OnInit, OnDestroy {
       switchMap(id => this.getAccount(id)),
     );
 
-    const picturesScroll$ = this.scrollSubject.pipe(
-      switchMap(() => id$.pipe(
-        switchMap(id => this.getPictures(id, this.pageSize, this.pageNumber))
-      )),
-      startWith(null)
-    );
+    id$.pipe(tap(id=>{
+      this.pictureTrackService.accountPageId = id
+      this.pictureTrackService.triggerCall.next(null);
+    })).subscribe()
 
-    this.account$ = combineLatest([initialAccount$, picturesScroll$]).pipe(
-      map(([account, pictures]) => {
+    this.account$ = combineLatest([initialAccount$]).pipe(
+      map(([account]) => {
         if (account) {
           const acc = account as AccountDto;
           if(this.currentId == ""){
@@ -141,15 +101,6 @@ export class AccountComponent implements OnInit, OnDestroy {
           if(this.currentId != acc.id){
             this.pictures = []
             this.currentId = acc.id
-          }
-          if (pictures && pictures.items) {
-            if (pictures.items[0].account.id == acc.id) {
-              this.totalPages = pictures.totalPages
-              this.pictures = this.pictures.concat(pictures.items);
-              if (pictures?.totalPages != pictures?.page) {
-                this.enableScrollListener = true;
-              }
-            }
           }
           this.isAccountCurrentUsers = acc.id == this.authService.getJwtData()?.uid;
           this.likesCount = acc.likeCount
@@ -161,15 +112,6 @@ export class AccountComponent implements OnInit, OnDestroy {
       filter((account): account is AccountDto => account !== null)
     );
   }
-
-  logout() {
-    this.authService.forgetTokens().subscribe();
-  }
-
-  ngOnDestroy() {
-    this.masterSub.unsubscribe();
-  }
-
   private getAccount(id: string) {
     return this.accountService.getById(id).pipe(
       catchError(async (err) => {
@@ -178,9 +120,5 @@ export class AccountComponent implements OnInit, OnDestroy {
         return of(null);
       }))
   }
-
-  private getPictures = (accId: string, pageSize: number, pageNumber: number) => {
-    return this.accountService.getPicturesById(accId, pageSize, pageNumber);
-  };
 
 }

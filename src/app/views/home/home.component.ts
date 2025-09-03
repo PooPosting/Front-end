@@ -7,7 +7,7 @@ import {
 } from "./create-account-banner/create-account-banner.component";
 import {fadeInAnimation} from "../../shared/utility/animations/fadeInAnimation";
 import {AuthService} from "../../services/api/account/auth.service";
-import {PictureTrackingService} from "./picture-tracking.service";
+import {HomePictureTrackingService} from "./home-picture-tracking.service";
 
 @Component({
   selector: 'pp-home',
@@ -24,7 +24,7 @@ import {PictureTrackingService} from "./picture-tracking.service";
 })
 export class HomeComponent {
   private authService = inject(AuthService)
-  private homeService = inject(PictureTrackingService)
+  private homeService = inject(HomePictureTrackingService)
 
   pictures$ = this.homeService.pictures$;
 
