@@ -4,8 +4,8 @@
 
 export const environment = {
   production: false,
-  appWebUrl: "http://localhost:4200",
-  apiUrl: "https://dev.pooposting.pl/api",
+  appWebUrl: "http://localhost:5001",
+  apiUrl: "http://localhost:5001/api",
 };
 
 /*

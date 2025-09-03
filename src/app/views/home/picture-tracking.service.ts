@@ -1,17 +1,17 @@
-import {inject, Injectable} from '@angular/core';
-import {BehaviorSubject, combineLatest, shareReplay, startWith, switchMap} from "rxjs";
-import {map} from "rxjs/operators";
+import {ChangeDetectorRef, inject, Injectable} from '@angular/core';
+import {BehaviorSubject, combineLatest, shareReplay, startWith, Subject, switchMap} from "rxjs";
+import {filter, map, tap} from "rxjs/operators";
 import {PictureService} from "../../services/api/picture/picture.service";
 import {PictureLikesService} from "../../services/api/picture/picture-likes.service";
 import {CommentService} from "../../services/api/comment/comment.service";
 import {PagedResult} from "../../shared/utility/dtos/PagedResult";
 import {PictureDto} from "../../shared/utility/dtos/PictureDto";
+import { NavigationEnd, NavigationStart, Router } from '@angular/router';
 
 @Injectable({
   providedIn: 'root'
 })
-// todo: rename to pictureTrackingService
-export class HomeService {
+export class PictureTrackingService {
   public triggerCall = new BehaviorSubject<null>(null);
   public canFetchPictures = true;
 
@@ -21,13 +21,12 @@ export class HomeService {
   private pictureService = inject(PictureService);
   private pictureLikesService = inject(PictureLikesService);
   private commentService = inject(CommentService)
-
   private picturesAggregated: PictureDto[] = [];
+  private pictureUpdate$ = new Subject<PictureDto>();
 
   // todo: introduce accountPageScroll
 
-  // todo: rename to homepageScroll
-  scrollWithPictures$ = this.triggerCall
+  homepageScroll$ = this.triggerCall
     .pipe(
       switchMap(() => this.getPictures(this.pageSize, this.pageNumber))
     );
@@ -46,19 +45,24 @@ export class HomeService {
 
   // todo: either handle newly introduced accountPage scroll or do it in a separate rxjs stream
   pictures$ = combineLatest([
-    this.scrollWithPictures$,
+    this.homepageScroll$,
     this.likedPicture$,
     this.updatedPicture$,
-    this.commentAdded$
+    this.commentAdded$,
+    this.pictureUpdate$.pipe(startWith(null))
   ]).pipe(
     shareReplay(),
     map(([
            pictures,
            likedPicture,
            updatedPicture,
-           commentAdded
+           commentAdded,
+           pictureUpdate
          ]) => {
       return pictures.map((picture) => {
+        if (pictureUpdate && picture.id === pictureUpdate.id) {
+          return { ...picture, ...pictureUpdate };
+        }
         if (likedPicture && picture.id === likedPicture.id) {
           return {
             ...picture,
@@ -77,6 +81,19 @@ export class HomeService {
     })
   );
 
+  // activates after user closes picture modal and gets id from url
+  constructor(private router: Router) {
+    this.router.events
+      .pipe(
+        filter((event): event is NavigationStart => event instanceof NavigationStart)
+      )
+      .subscribe(() => {
+        if (router.url.includes("?picture=")) {
+          const pictureId = router.url.split("=")[router.url.split("=").length-1]
+          this.updatePicture(pictureId)
+        }
+      });
+  }
 
   // todo: consider using separate method for account pictures, non obligatory
   private getPictures = (pageSize: number, pageNumber: number) => {
@@ -90,4 +107,14 @@ export class HomeService {
     );
   };
 
+  private updatePicture = (id: string) => {
+    this.pictureService.getById(id)
+      .pipe(
+        tap((pic : PictureDto) => {
+          this.pictureUpdate$.next({
+            ...pic,
+          });
+        })
+      ).subscribe()
+  }
 }
