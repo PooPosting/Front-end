@@ -44,6 +44,7 @@ export class AccountComponent implements OnInit{
 
   @HostListener('window:scroll', [])
   onWindowScroll() {
+    
     const windowHeight = window.innerHeight;
     const documentHeight = document.documentElement.scrollHeight;
     const scrollPosition = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
@@ -70,7 +71,6 @@ export class AccountComponent implements OnInit{
   }
 
   async ngOnInit() {
-    
     const id$: Observable<string> = this.route.paramMap.pipe(
       switchMap(params => {
         const id = params.get('id');
@@ -87,6 +87,7 @@ export class AccountComponent implements OnInit{
     );
 
     id$.pipe(tap(id=>{
+      this.pictureTrackService.resetPictures()
       this.pictureTrackService.accountPageId = id
       this.pictureTrackService.triggerCall.next(null);
     })).subscribe()

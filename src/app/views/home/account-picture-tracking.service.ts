@@ -122,4 +122,8 @@ export class AccountPictureTrackingService {
         })
       ).subscribe()
   }
+
+  public resetPictures(){
+    this.picturesAggregated = []
+  }
 }
