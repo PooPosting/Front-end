@@ -26,7 +26,7 @@ import {AuthService} from "../../services/data-access/account/auth.service";
 @Component({
   selector: 'pp-account',
   standalone: true,
-  imports: [CommonModule, UrlTransformModule, RouterLink, PostPreviewComponent],
+  imports: [CommonModule, UrlTransformModule, PostPreviewComponent],
   templateUrl: './account.component.html',
   styleUrls: ['./account.component.scss'],
   animations: [fadeInAnimation]
