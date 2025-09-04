@@ -1,4 +1,4 @@
-<div class="bg-surface-300 p-2 rounded-lg max-w-max w-full">
+<div class="bg-surface-300 dark:bg-dark-surface-300 p-2 rounded-lg max-w-max w-full">
   <div class="w-6 float-left">
     <a routerLink="/account/{{comm.account.id}}">
       <img class="w-6 max-h-6 h-6 object-fill rounded-3xl"
@@ -13,7 +13,7 @@
          routerLink="/account/{{comm.account.id}}">
         {{comm.account.nickname}}
       </a>
-      <span class="text-xs text-gray-600">{{comm.commentAdded | date:shortDateFormat}}</span>
+      <span class="text-xs text-grey dark:text-dark-grey">{{comm.commentAdded | dateAgo}}</span>
     </div>
     <span class="text-sm">{{ comm.text.length > 125 ? comm.text.substring(0, 125) + '...' : comm.text }}</span>
   </div>

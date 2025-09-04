@@ -12,22 +12,28 @@ import {NgOptimizedImage} from "@angular/common";
 import {UrlTransformModule} from "./shared/utility/pipes/url-transform/url-transform.module";
 import {MessageService} from "primeng/api";
 import {TokenInterceptorService} from "./shared/utility/interceptors/token-interceptor.service";
+import { SpinnerComponent } from './shared/components/spinner/spinner.component';
+import { EasterEggComponent } from './shared/components/easter-egg/easter-egg.component';
+import { TextButtonComponent } from './shared/components/text-button/text-button.component';
 
 @NgModule({
   declarations: [
     AppComponent,
+    SpinnerComponent,
   ],
-    imports: [
-      RouterModule,
-      BrowserModule,
-      BrowserAnimationsModule,
-      AppRoutingModule,
-      HttpClientModule,
-      ServiceWorkerModule.register('ngsw-worker.js', {enabled: environment.production}),
-      LayoutModule,
-      NgOptimizedImage,
-      UrlTransformModule,
-    ],
+  imports: [
+    RouterModule,
+    BrowserModule,
+    BrowserAnimationsModule,
+    AppRoutingModule,
+    HttpClientModule,
+    ServiceWorkerModule.register('ngsw-worker.js', {enabled: environment.production}),
+    LayoutModule,
+    NgOptimizedImage,
+    UrlTransformModule,
+    TextButtonComponent,
+    EasterEggComponent
+  ],
   providers: [
     {
       provide: HTTP_INTERCEPTORS,

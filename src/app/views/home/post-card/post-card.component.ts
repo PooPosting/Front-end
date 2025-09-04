@@ -1,4 +1,4 @@
-import {Component, Input} from '@angular/core';
+import {Component, EventEmitter, Input, Output} from '@angular/core';
 import {DatePipe, NgClass, NgForOf, NgIf, NgOptimizedImage} from "@angular/common";
 import {RouterLink} from "@angular/router";
 import {PictureDto} from "../../../shared/utility/dtos/PictureDto";
@@ -7,6 +7,9 @@ import {fadeInAnimation} from "../../../shared/utility/animations/fadeInAnimatio
 import {LikeBtnComponent} from "../../../shared/components/like-btn/like-btn.component";
 import {TagComponent} from "../../../shared/components/tag/tag.component";
 import {MiniCommentComponent} from "./mini-comment/mini-comment.component";
+import {OpenQueryModalDirective} from "../../../shared/components/query-modal/open-query-modal.directive";
+import {QueryModalEnum} from "../../../shared/components/query-modal/query-modal.enum";
+import { ModBtnsComponent } from 'src/app/shared/components/mod-btn/mod-btn.component';
 
 @Component({
   selector: 'pp-post-card',
@@ -26,8 +29,10 @@ import {MiniCommentComponent} from "./mini-comment/mini-comment.component";
     NgClass,
     DatePipe,
     LikeBtnComponent,
+    ModBtnsComponent,
     TagComponent,
-    MiniCommentComponent
+    MiniCommentComponent,
+    OpenQueryModalDirective
   ],
   animations: [
     fadeInAnimation
@@ -37,4 +42,5 @@ import {MiniCommentComponent} from "./mini-comment/mini-comment.component";
 export class PostCardComponent {
   @Input() pic?: PictureDto;
   // todo: make a readonly version
+  protected readonly QueryModalEnum = QueryModalEnum;
 }
