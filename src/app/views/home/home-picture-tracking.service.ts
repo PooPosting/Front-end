@@ -1,16 +1,17 @@
 import {inject, Injectable} from '@angular/core';
-import {BehaviorSubject, combineLatest, shareReplay, startWith, switchMap} from "rxjs";
-import {map} from "rxjs/operators";
+import {BehaviorSubject, combineLatest, shareReplay, startWith, Subject, switchMap} from "rxjs";
+import {filter, map, tap} from "rxjs/operators";
 import {PictureService} from "../../services/api/picture/picture.service";
 import {PictureLikesService} from "../../services/api/picture/picture-likes.service";
 import {CommentService} from "../../services/api/comment/comment.service";
 import {PagedResult} from "../../shared/utility/dtos/PagedResult";
 import {PictureDto} from "../../shared/utility/dtos/PictureDto";
+import {NavigationStart, Router} from '@angular/router';
 
 @Injectable({
   providedIn: 'root'
 })
-export class HomeService {
+export class HomePictureTrackingService {
   public triggerCall = new BehaviorSubject<null>(null);
   public canFetchPictures = true;
 
@@ -22,8 +23,9 @@ export class HomeService {
   private commentService = inject(CommentService)
 
   private picturesAggregated: PictureDto[] = [];
+  private pictureUpdate$ = new Subject<PictureDto>();
 
-  scrollWithPictures$ = this.triggerCall
+  homepageScroll$ = this.triggerCall
     .pipe(
       switchMap(() => this.getPictures(this.pageSize, this.pageNumber))
     );
@@ -41,21 +43,30 @@ export class HomeService {
     );
 
   pictures$ = combineLatest([
-    this.scrollWithPictures$,
+    this.homepageScroll$,
     this.likedPicture$,
     this.updatedPicture$,
-    this.commentAdded$
+    this.commentAdded$,
+    this.pictureUpdate$.pipe(startWith(null))
   ]).pipe(
     shareReplay(),
     map(([
            pictures,
            likedPicture,
            updatedPicture,
-           commentAdded
+           commentAdded,
+           pictureUpdate
          ]) => {
       return pictures.map((picture) => {
+        if (pictureUpdate && picture.id === pictureUpdate.id) {
+          return { ...picture, ...pictureUpdate };
+        }
         if (likedPicture && picture.id === likedPicture.id) {
-          return { ...picture, isLiked: likedPicture.isLiked };
+          return {
+            ...picture,
+            isLiked: likedPicture.isLiked,
+            likeCount: likedPicture.likeCount
+          };
         }
         if (updatedPicture && picture.id === updatedPicture.id) {
           return { ...updatedPicture };
@@ -68,7 +79,6 @@ export class HomeService {
     })
   );
 
-
   private getPictures = (pageSize: number, pageNumber: number) => {
     return this.pictureService.get(pageSize, pageNumber).pipe(
       map((res: PagedResult<PictureDto>) => {
@@ -80,4 +90,29 @@ export class HomeService {
     );
   };
 
+  // activates after user closes picture modal and gets pic id from url
+  constructor(private router: Router) {
+    this.router.events
+      .pipe(
+        filter((event): event is NavigationStart => event instanceof NavigationStart)
+      )
+      .subscribe(() => {
+        if (router.url.includes("?picture=")) {
+          const pictureId = router.url.split("=")[router.url.split("=").length-1]
+          this.updatePicture(pictureId)
+        }
+      });
+  }
+
+  // updates picture
+  private updatePicture = (id: string) => {
+    this.pictureService.getById(id)
+      .pipe(
+        tap((pic : PictureDto) => {
+          this.pictureUpdate$.next({
+            ...pic,
+          });
+        })
+      ).subscribe()
+  }
 }
