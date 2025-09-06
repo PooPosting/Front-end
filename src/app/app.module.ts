@@ -15,6 +15,7 @@ import {TokenInterceptorService} from "./shared/utility/interceptors/token-inter
 import { SpinnerComponent } from './shared/components/spinner/spinner.component';
 import { EasterEggComponent } from './shared/components/easter-egg/easter-egg.component';
 import { TextButtonComponent } from './shared/components/text-button/text-button.component';
+import { MatDialogModule } from '@angular/material/dialog';
 
 @NgModule({
   declarations: [
@@ -32,7 +33,8 @@ import { TextButtonComponent } from './shared/components/text-button/text-button
     NgOptimizedImage,
     UrlTransformModule,
     TextButtonComponent,
-    EasterEggComponent
+    EasterEggComponent,
+    MatDialogModule
   ],
   providers: [
     {

@@ -10,6 +10,7 @@ import {MiniCommentComponent} from "./mini-comment/mini-comment.component";
 import {OpenQueryModalDirective} from "../../../shared/components/query-modal/open-query-modal.directive";
 import {QueryModalEnum} from "../../../shared/components/query-modal/query-modal.enum";
 import { ModBtnsComponent } from 'src/app/shared/components/mod-btn/mod-btn.component';
+import { ShareBtnComponent } from "src/app/shared/components/share-btn/share-btn.component";
 
 @Component({
   selector: 'pp-post-card',
@@ -32,8 +33,9 @@ import { ModBtnsComponent } from 'src/app/shared/components/mod-btn/mod-btn.comp
     ModBtnsComponent,
     TagComponent,
     MiniCommentComponent,
-    OpenQueryModalDirective
-  ],
+    OpenQueryModalDirective,
+    ShareBtnComponent
+],
   animations: [
     fadeInAnimation
   ],
