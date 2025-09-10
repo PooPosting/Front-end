@@ -3,7 +3,14 @@ import { CommonModule } from '@angular/common';
 import { PictureDto } from "../../utility/dtos/PictureDto";
 import { environment } from 'src/environments/environment';
 import { DialogModule } from "primeng/dialog";
-import { ShareOptionDto } from '../../utility/dtos/ShareOptionDto';
+
+interface ShareOption {
+  website: string;
+  link: string;
+  icon: string;
+  color: string;
+}
+
 @Component({
   selector: 'pp-share-btn',
   standalone: true,
@@ -16,7 +23,8 @@ export class ShareBtnComponent {
   @Output() picChange: EventEmitter<PictureDto> = new EventEmitter<PictureDto>();
   @ViewChild('scrollCont') input: ElementRef<HTMLDivElement> | undefined;
 
-  shareOptions: ShareOptionDto[] = [
+  // to add new share, add it to this list (used in share() and 8th line in html file)
+  shareOptions: ShareOption[] = [
     {website: "Telegram", link: "https://t.me/share/url?url={picUrl}&text=Checkout this cool image on PooPosting!", color: "text-blue-400", icon: "icon-telegram"},
     {website: "Twitter/X", link: "https://twitter.com/intent/tweet?url={picUrl}&text=Checkout this cool image on PooPosting!", color: "text-gray-600", icon: "icon-twitter"},
     {website: "Facebook", link: "https://www.facebook.com/sharer/sharer.php?u={picUrl}", color: "text-blue-600", icon: "icon-facebook"},
