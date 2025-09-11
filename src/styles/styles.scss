@@ -101,3 +101,9 @@ header, footer, nav {
   @apply rounded-lg transition-all ease-in-out duration-100
   active:opacity-75
 }
+
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

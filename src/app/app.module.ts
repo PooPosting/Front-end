@@ -32,7 +32,7 @@ import { TextButtonComponent } from './shared/components/text-button/text-button
     NgOptimizedImage,
     UrlTransformModule,
     TextButtonComponent,
-    EasterEggComponent
+    EasterEggComponent,
   ],
   providers: [
     {
