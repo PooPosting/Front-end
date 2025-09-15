@@ -15,6 +15,7 @@ import {TokenInterceptorService} from "./shared/utility/interceptors/token-inter
 import { SpinnerComponent } from './shared/components/spinner/spinner.component';
 import { EasterEggComponent } from './shared/components/easter-egg/easter-egg.component';
 import { TextButtonComponent } from './shared/components/text-button/text-button.component';
+import { ToastrModule } from 'ngx-toastr';
 
 @NgModule({
   declarations: [
@@ -33,6 +34,9 @@ import { TextButtonComponent } from './shared/components/text-button/text-button
     UrlTransformModule,
     TextButtonComponent,
     EasterEggComponent,
+    ToastrModule.forRoot({
+      preventDuplicates: true,
+    }),
   ],
   providers: [
     {
