@@ -125,7 +125,6 @@ export class DetailsComponent implements AfterContentInit {
 
   async goNext() {
     if (this.canProceed) {
-      this.addPostService.inMemoryCreatePictureDto.description = this.postDetailsTemp.description;
       await this.router.navigate(['/add-post/review'])
     }
   }
